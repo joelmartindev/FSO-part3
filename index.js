@@ -1,7 +1,9 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const app = express()
 const cors = require('cors')
+const Person = require('./models/person')
 
 app.use(cors())
 app.use(express.json())
@@ -46,7 +48,10 @@ app.get('/info', (req, res) => {
 })
 
 app.get('/api/persons', (req, res) => {
-    res.json(persons)
+    Person.find({})
+    .then(people => {
+        res.json(people.map(person => person.toJSON()));
+    });
 })
 
 app.get('/api/persons/:id', (request, response) => {
@@ -74,21 +79,25 @@ app.post('/api/persons', (request, response) => {
             error: 'number missing'
         })
     }
-    
-    if (persons.map(p => p.name).includes(body.name)){
+
+    if (persons.map(p => p.name).includes(body.name)) {
         return response.status(400).json({
             error: 'name must be unique'
         })
     }
 
-      const person = {
+    const person = new Person({
         name: body.name,
         number: body.number || false,
         id: Math.floor(Math.random() * (1000 - 1) + 1),
-      }
-    persons = persons.concat(person)
-    
-    response.json(person)
+    })
+
+    person
+    .save()
+    .then(p => p.toJSON())
+    .then(JSONPerson => {
+      response.json(JSONPerson);
+    })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
